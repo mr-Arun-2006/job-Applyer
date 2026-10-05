@@ -19,12 +19,13 @@ MAX_DETAIL_PAGES_PER_SOURCE = int(os.getenv("MAX_DETAIL_PAGES_PER_SOURCE", "200"
 
 DEFAULT_MODELS = {
     "extract": "openai/gpt-oss-20b",
-    "analyze": "z-ai/glm-5-3-flash",
+    "analyze": "nvidia/nemotron-3-super-120b-a12b",
     "match": "openai/gpt-oss-20b",
-    "resume": "z-ai/glm-5-3",
-    "cover_letter": "z-ai/glm-5-3-flash",
+    "resume": "openai/gpt-oss-120b",
+    "cover_letter": "openai/gpt-oss-20b",
     "form": "openai/gpt-oss-20b",
-    "fallback": "deepseek-ai/deepseek-v4.1-flash",
+    "resume_validate": "openai/gpt-oss-20b",
+    "fallback": "deepseek-ai/deepseek-v4-flash",
 }
 
 

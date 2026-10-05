@@ -42,27 +42,49 @@ Never infer a qualification the profile does not state.""",
             temperature=0.0,
         )
 
-    def customize_resume_json(self, job: dict, profile_json: str, master_resume: str) -> str:
+    def customize_resume_json(
+        self, job: dict, profile_json: str, master_resume: str
+    ) -> str:
         return self.router.complete(
             "resume",
-            """Create a truthful, job-specific resume from the supplied master resume.
-You may reorder and rewrite existing facts for relevance.
-Never fabricate skills, experience, education, certifications, dates, employers,
-projects, achievements or metrics. Return resume text only.""",
+            """Create a truthful ATS-friendly resume tailored to this exact job.
+Use exactly these section headings when applicable:
+PROFESSIONAL SUMMARY
+SKILLS
+WORK EXPERIENCE
+PROJECTS
+EDUCATION
+CERTIFICATIONS
+
+Rules:
+- Single-column plain text structure; no tables, columns, graphics, icons, sidebars or text boxes.
+- Use standard ATS terminology and naturally include relevant keywords from the job.
+- Prioritize responsibilities and requirements that match facts in the master resume.
+- Reorder existing truthful skills, projects and experience for relevance.
+- Never fabricate skills, experience, education, certifications, employers, dates, achievements or metrics.
+- If a requirement is not supported by the master resume, omit it.
+- Return only resume text, not commentary.""",
             f"JOB:\n{json.dumps(job, ensure_ascii=False)}\n\nPROFILE:\n{profile_json}\n\nMASTER RESUME:\n{master_resume}",
             temperature=0.1,
             max_tokens=6000,
         )
 
-    def generate_cover_letter(self, job: dict, profile_json: str, resume_text: str) -> str:
-        return self.router.complete(
-            "cover_letter",
-            """Write a concise, truthful cover letter for this job.
-Use only facts present in the profile and resume. Never invent qualifications,
-experience or achievements. Return the letter only.""",
-            f"JOB:\n{json.dumps(job, ensure_ascii=False)}\n\nPROFILE:\n{profile_json}\n\nRESUME:\n{resume_text}",
-            temperature=0.2,
-            max_tokens=1800,
+    def validate_resume(
+        self, job: dict, master_resume: str, generated_resume: str
+    ) -> dict:
+        return self.router.complete_json(
+            "resume_validate",
+            """Audit a generated resume against the master resume and job description.
+Return JSON with:
+approved (boolean),
+unsupported_claims (array of strings),
+missing_high_value_keywords (array of strings),
+ats_issues (array of strings),
+recommendations (array of strings).
+A claim is unsupported when it is not grounded in the master resume.
+Do not reject harmless rewording of supported facts.""",
+            f"JOB:\n{json.dumps(job, ensure_ascii=False)}\n\nMASTER RESUME:\n{master_resume}\n\nGENERATED RESUME:\n{generated_resume}",
+            temperature=0.0,
         )
 
     def map_form(self, form_fields_json: str, profile_json: str, resume_text: str) -> dict:
@@ -74,4 +96,17 @@ Unknown, ambiguous, sensitive, CAPTCHA, OTP/MFA and legal declarations
 must be NEEDS_HUMAN_INPUT.""",
             f"FIELDS:\n{form_fields_json}\n\nPROFILE:\n{profile_json}\n\nRESUME:\n{resume_text}",
             temperature=0.0,
+        )
+
+    def generate_cover_letter(
+        self, job: dict, profile_json: str, resume_text: str
+    ) -> str:
+        return self.router.complete(
+            "cover_letter",
+            """Write a concise, truthful cover letter for this job.
+Use only facts present in the profile and resume. Never invent qualifications,
+experience or achievements. Return the letter only.""",
+            f"JOB:\n{json.dumps(job, ensure_ascii=False)}\n\nPROFILE:\n{profile_json}\n\nRESUME:\n{resume_text}",
+            temperature=0.2,
+            max_tokens=1800,
         )

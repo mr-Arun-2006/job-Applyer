@@ -24,12 +24,12 @@ https://integrate.api.nvidia.com/v1/chat/completions
 Default stage mapping:
 
     extract       -> openai/gpt-oss-20b
-    analyze       -> z-ai/glm-5-3-flash
+    analyze       -> nvidia/nemotron-3-super-120b-a12b
     match         -> openai/gpt-oss-20b
-    resume        -> z-ai/glm-5-3
-    cover_letter  -> z-ai/glm-5-3-flash
+    resume        -> openai/gpt-oss-120b
+    cover_letter  -> openai/gpt-oss-20b
     form          -> openai/gpt-oss-20b
-    fallback      -> deepseek-ai/deepseek-v4.1-flash
+    fallback      -> deepseek-ai/deepseek-v4-flash
 
 All model IDs are configurable in .env.
 
@@ -88,3 +88,12 @@ For each application, the browser fills ordinary fields when they can be mapped 
 - Never bypass CAPTCHA, MFA/OTP, authentication barriers or anti-bot controls.
 - Stop for human-only questions or legal declarations.
 - Respect site terms, rate limits and applicable laws.
+
+
+## ATS resume generation
+
+Each eligible job gets a separate ATS-oriented DOCX resume. The generator uses a single-column layout, standard section headings, Arial typography, simple bullets, and no tables, graphics, icons, sidebars, text boxes or multi-column formatting.
+
+The resume model first tailors the content to the specific job description, responsibilities, required skills and preferred skills. A second NVIDIA model validates the draft against the master resume and reports unsupported claims and ATS issues. When validation fails, the draft is corrected once before the DOCX is written.
+
+The master resume remains the factual source of truth. The system may reorder and rewrite supported facts for relevance but does not add unsupported qualifications, experience, education, certifications, dates, employers, achievements or metrics.
