@@ -69,8 +69,8 @@ single-column in structure, with standard section headings. Return resume text o
 
         if not bool(validation.get("approved", False)):
             raise RuntimeError(
-                f"Resume validation failed for {job.get(\"company\")} / "
-                f"{job.get(\"title\")}: "
+                f"Resume validation failed for {job.get('company')} / "
+                f"{job.get('title')}: "
                 + "; ".join(validation.get("unsupported_claims", []))
             )
 
