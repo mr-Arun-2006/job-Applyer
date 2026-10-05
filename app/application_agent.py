@@ -101,7 +101,6 @@ class ApplicationAgent:
         self,
         jobs: list[dict],
         profile_json: str,
-        resume_paths: dict[str, str],
         browser_profile_dir: str = "./data/browser_profile",
     ) -> list[tuple[dict, str]]:
         results = []
@@ -112,12 +111,15 @@ class ApplicationAgent:
             )
             try:
                 for job in jobs:
-                    key = str(job.get("application_url") or job.get("official_url") or "")
+                    resume_path = job.get("resume_path")
+                    if not resume_path:
+                        results.append((job, "SKIPPED_NO_RESUME"))
+                        continue
                     result = self.run_one(
                         context,
                         job,
                         profile_json,
-                        resume_paths[key],
+                        str(resume_path),
                     )
                     results.append((job, result))
             finally:
