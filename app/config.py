@@ -24,6 +24,7 @@ DEFAULT_MODELS = {
     "resume": "openai/gpt-oss-120b",
     "cover_letter": "openai/gpt-oss-20b",
     "form": "openai/gpt-oss-20b",
+    "resume_validate": "openai/gpt-oss-20b",
     "fallback": "deepseek-ai/deepseek-v4-flash",
 }
 
