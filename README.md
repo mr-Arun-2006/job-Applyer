@@ -75,7 +75,11 @@ Prepare every eligible job with a fresh customized resume and cover letter:
 
     python main.py prepare
 
-The prepare command does not silently submit applications. Browser submission remains a separate human-confirmed stage.
+Run the browser application flow for every eligible job:
+
+    python main.py apply
+
+For each application, the browser fills ordinary fields when they can be mapped safely, then pauses and requires you to type SUBMIT or SKIP. CAPTCHA, MFA, OTP, legal declarations and other human-only controls are never bypassed.
 
 ## Truthfulness and safety
 
