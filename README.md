@@ -1,56 +1,86 @@
 # Job-Applyer
 
-Personal-use job application automation.
+Personal-use job discovery and application preparation system focused on official company career sources.
 
 ## Workflow
 
-1. **Job discovery / scraping** — fetch permitted public job pages.
-2. **Job extraction** — an LLM extracts company, role, location, responsibilities, requirements, skills and application URL.
-3. **Role analysis** — a separate model can analyze responsibilities and suitability factors.
-4. **Profile matching** — a separate model can score fit; deterministic matching remains available.
-5. **Resume customization** — a dedicated model creates a truthful, role-focused resume from the master resume.
-6. **Application preparation** — map known profile/resume data to ordinary application fields.
-7. **Application filling** — Playwright fills permitted fields.
-8. **Submission** — requires a final human confirmation and never bypasses CAPTCHA, MFA or anti-bot controls.
+1. Read a configured list of official company career pages.
+2. Crawl candidate job links within the company's allowed domains.
+3. Extract job facts with an NVIDIA hosted LLM.
+4. Deduplicate jobs in a local SQLite database.
+5. Analyze and match every eligible job against the candidate profile.
+6. Create a new tailored resume for each job.
+7. Create a job-specific cover letter for each job.
+8. Record the exact resume and cover-letter files used for each application.
+9. Keep final submission human-confirmed and never bypass CAPTCHA, MFA, OTP or anti-bot controls.
 
-## Multi-provider AI
+There is intentionally no 10-job application cap. Set APPLY_TO_ALL_ELIGIBLE=true to process every eligible job.
 
-The agent supports up to **52 provider slots** using OpenAI-compatible chat-completion APIs. Each stage can use a different provider/model:
+## NVIDIA API
 
-```
-MODEL_EXTRACT=provider_01
-MODEL_ANALYZE=provider_02
-MODEL_MATCH=provider_03
-MODEL_RESUME=provider_04
-MODEL_FORM=provider_05
-```
+The application uses one NVIDIA_API_KEY with NVIDIA's OpenAI-compatible chat endpoint:
+https://integrate.api.nvidia.com/v1/chat/completions
 
-Only configure the providers you actually use. API keys belong in local `.env`, never in GitHub.
+Default stage mapping:
 
-## Commands
+    extract       -> openai/gpt-oss-20b
+    analyze       -> z-ai/glm-5-3-flash
+    match         -> openai/gpt-oss-20b
+    resume        -> z-ai/glm-5-3
+    cover_letter  -> z-ai/glm-5-3-flash
+    form          -> openai/gpt-oss-20b
+    fallback      -> deepseek-ai/deepseek-v4.1-flash
 
-```bash
-python main.py init-db
-python main.py providers
-python main.py scrape "https://example.com/job"
-```
+All model IDs are configurable in .env.
 
-Install dependencies:
+## Official-source policy
 
-```bash
-pip install -r requirements.txt
-playwright install
-```
+A job is accepted only when its source URL and application URL pass the configured company-domain allowlist. The system is not designed to scrape LinkedIn, Indeed, Naukri, Glassdoor or other job aggregators.
+
+For a company that uses a third-party ATS, add that ATS host to the company's allowed_domains only when it is the company's official hiring endpoint.
+
+Copy the source template:
+
+    cp config/company_sources.example.json config/company_sources.json
+
+Then add your target companies and their official career URLs.
+
+## Local setup
+
+Create and activate a virtual environment, then install:
+
+    pip install -r requirements.txt
+    playwright install
+
+Copy .env.example to .env and set NVIDIA_API_KEY.
+
+Create your local private files:
+
+    private/master_resume.txt
+    private/profile.json
+
+Initialize the database:
+
+    python main.py init-db
+
+Show configured AI models:
+
+    python main.py models
+
+Discover official-company jobs:
+
+    python main.py discover
+
+Prepare every eligible job with a fresh customized resume and cover letter:
+
+    python main.py prepare
+
+The prepare command does not silently submit applications. Browser submission remains a separate human-confirmed stage.
 
 ## Truthfulness and safety
 
 - Personal use only.
-- Never fabricate qualifications, experience, education, projects, certifications, dates or metrics.
-- Use source-specific adapters when a website requires special handling.
-- Do not bypass CAPTCHA, MFA, login barriers or anti-bot controls.
-- If a human-only step appears, pause for the user.
-- Follow each site's terms and applicable laws.
-
-## Private data
-
-Keep the master resume and personal profile outside the public repository (for example under a local `private/` directory ignored by Git). Do not commit API keys or personal credentials.
+- Never fabricate candidate qualifications.
+- Never bypass CAPTCHA, MFA/OTP, authentication barriers or anti-bot controls.
+- Stop for human-only questions or legal declarations.
+- Respect site terms, rate limits and applicable laws.
