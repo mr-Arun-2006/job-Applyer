@@ -7,6 +7,7 @@ from playwright.sync_api import BrowserContext, Page, sync_playwright
 
 from app.ai_pipeline import JobAIPipeline
 from app.form_agent import FormAgent
+from app.resume_engine import ATSResumeEngine
 
 
 class ApplicationAgent:
@@ -61,7 +62,7 @@ class ApplicationAgent:
             answers = self.ai.map_form(
                 json.dumps(fields, ensure_ascii=False),
                 profile_json,
-                Path(resume_path).read_text(encoding="utf-8"),
+                ATSResumeEngine.extract_text(resume_path),
             )
 
             for field in fields:
