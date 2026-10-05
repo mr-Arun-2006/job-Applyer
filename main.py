@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 from app.ai_pipeline import JobAIPipeline
+from app.application_agent import ApplicationAgent
 from app.config import (
     MASTER_RESUME_PATH,
     OFFICIAL_SOURCES_PATH,
@@ -26,6 +27,41 @@ def load_resume() -> str:
     return Path(MASTER_RESUME_PATH).read_text(encoding="utf-8")
 
 
+def discover_jobs(sources_path: str, ai: JobAIPipeline) -> list[dict]:
+    sources = load_official_sources(sources_path)
+    if not sources:
+        raise SystemExit(
+            f"No official sources configured. Copy the source template to "
+            f"{sources_path} and add your target companies."
+        )
+
+    all_jobs: list[dict] = []
+    for source in sources:
+        all_jobs.extend(discover_official_source(source, ai))
+    save_jobs(all_jobs)
+    return all_jobs
+
+
+def prepare_jobs(jobs: list[dict], ai: JobAIPipeline) -> list[dict]:
+    profile = load_profile()
+    resume = load_resume()
+    runner = JobRunner(ai)
+    eligible = runner.eligible_jobs(jobs, profile)
+
+    print(f"Eligible jobs: {len(eligible)}")
+    for index, job in enumerate(eligible, start=1):
+        prepared = runner.prepare_application(job, profile, resume)
+        job["resume_path"] = prepared["resume_path"]
+        job["cover_letter_path"] = prepared["cover_letter_path"]
+        runner.record_result(job, prepared, "READY_FOR_HUMAN_REVIEW")
+        print(
+            f"[{index}/{len(eligible)}] {job.get('company')} | "
+            f"{job.get('title')} | score={job.get('match_score')} | "
+            f"resume={prepared['resume_path']}"
+        )
+    return eligible
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Personal official-company Job-Applyer"
@@ -43,6 +79,9 @@ def main() -> None:
 
     prepare = sub.add_parser("prepare")
     prepare.add_argument("--sources", default=OFFICIAL_SOURCES_PATH)
+
+    apply = sub.add_parser("apply")
+    apply.add_argument("--sources", default=OFFICIAL_SOURCES_PATH)
 
     args = parser.parse_args()
 
@@ -64,44 +103,46 @@ def main() -> None:
     validate_local_config()
     init_db()
 
-    sources = load_official_sources(args.sources)
-    if not sources:
-        raise SystemExit(
-            f"No official sources configured. Copy the source template to "
-            f"{args.sources} and add your target companies."
-        )
-
     ai = JobAIPipeline()
-    all_jobs: list[dict] = []
-    for source in sources:
-        all_jobs.extend(discover_official_source(source, ai))
-
-    inserted = save_jobs(all_jobs)
-    print(f"Discovered {len(all_jobs)} jobs; stored {inserted} new jobs.")
+    jobs = discover_jobs(args.sources, ai)
+    print(f"Discovered {len(jobs)} jobs from configured official sources.")
 
     if args.command == "discover":
         return
 
-    profile = load_profile()
-    runner = JobRunner(ai)
-    eligible = runner.eligible_jobs(all_jobs, profile)
-    print(f"Eligible jobs: {len(eligible)}")
-
-    resume = load_resume()
-    for index, job in enumerate(eligible, start=1):
-        prepared = runner.prepare_application(job, profile, resume)
-        runner.record_result(job, prepared, "READY_FOR_HUMAN_REVIEW")
-        print(
-            f"[{index}/{len(eligible)}] {job.get('company')} | "
-            f"{job.get('title')} | score={job.get('match_score')} | "
-            f"resume={prepared['resume_path']}"
-        )
-
+    eligible = prepare_jobs(jobs, ai)
     print(f"Prepared files under {OUTPUT_DIR}.")
-    print(
-        "No automatic submission is performed by prepare. "
-        "CAPTCHA/MFA/OTP/human-only steps remain manual."
+
+    if args.command == "prepare":
+        print("No application submission performed.")
+        return
+
+    profile = load_profile()
+    resume_paths = {
+        str(job.get("application_url") or job.get("official_url") or ""): job["resume_path"]
+        for job in eligible
+        if job.get("resume_path")
+    }
+
+    agent = ApplicationAgent(ai)
+    results = agent.run_all(
+        eligible,
+        profile,
+        resume_paths,
     )
+
+    runner = JobRunner(ai)
+    for job, status in results:
+        prepared = {
+            "resume_path": job.get("resume_path"),
+            "cover_letter_path": job.get("cover_letter_path"),
+        }
+        mapped_status = "SUBMITTED" if status == "SUBMITTED" else status
+        runner.record_result(job, prepared, mapped_status, None if status == "SUBMITTED" else status)
+        print(f"{job.get('company')} | {job.get('title')} | {status}")
+
+    print("Application run completed.")
+    print("CAPTCHA/MFA/OTP/human-only controls are never bypassed.")
 
 
 if __name__ == "__main__":
