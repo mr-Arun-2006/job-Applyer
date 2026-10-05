@@ -12,6 +12,10 @@ if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is missing")
 
 
+def available_providers(max_slots: int = 52) -> list[str]:
+    return [f"provider_{i:02d}" for i in range(1, max_slots + 1) if os.getenv(f"PROVIDER_{i:02d}_BASE_URL") and os.getenv(f"PROVIDER_{i:02d}_API_KEY") and os.getenv(f"PROVIDER_{i:02d}_MODEL")]
+
+
 def provider_config(name: str) -> dict[str, str]:
     key = name.upper().replace("-", "_")
     base_url = os.getenv(f"{key}_BASE_URL", "").rstrip("/")
