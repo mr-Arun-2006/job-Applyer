@@ -67,6 +67,13 @@ single-column in structure, with standard section headings. Return resume text o
             )
             validation = self.ai.validate_resume(job, master_resume, resume_text)
 
+        if not bool(validation.get("approved", False)):
+            raise RuntimeError(
+                f"Resume validation failed for {job.get(\"company\")} / "
+                f"{job.get(\"title\")}: "
+                + "; ".join(validation.get("unsupported_claims", []))
+            )
+
         resume_path = self.resume_engine.render_docx(
             resume_text,
             job.get("company", "company"),
