@@ -118,17 +118,10 @@ def main() -> None:
         return
 
     profile = load_profile()
-    resume_paths = {
-        str(job.get("application_url") or job.get("official_url") or ""): job["resume_path"]
-        for job in eligible
-        if job.get("resume_path")
-    }
-
     agent = ApplicationAgent(ai)
     results = agent.run_all(
         eligible,
         profile,
-        resume_paths,
     )
 
     runner = JobRunner(ai)
