@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+import hashlib
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -116,7 +117,8 @@ class ATSResumeEngine:
                 _add_run(p, "• ", bold=False)
             _add_run(p, text)
 
-        output = out_dir / f"{_clean_filename(company)}_{_clean_filename(role)}_resume.docx"
+        job_suffix = hashlib.sha1(f"{company}|{role}".encode("utf-8")).hexdigest()[:8]
+        output = out_dir / f"{_clean_filename(company)}_{_clean_filename(role)}_{job_suffix}_resume.docx"
         document.core_properties.title = f"{role} Resume"
         document.core_properties.subject = f"ATS resume for {company}"
         document.core_properties.author = ""
