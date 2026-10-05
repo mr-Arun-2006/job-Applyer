@@ -99,9 +99,9 @@ def has_application(job: dict) -> bool:
     key = make_job_key(job)
     with _connection() as conn:
         row = conn.execute(
-            "SELECT 1 FROM applications WHERE job_key = ? LIMIT 1", (key,)
+            "SELECT status FROM applications WHERE job_key = ? LIMIT 1", (key,)
         ).fetchone()
-    return row is not None
+    return bool(row and row["status"] in {"SUBMITTED", "APPLIED"})
 
 
 def record_application(job: dict, resume_path: str | None, cover_letter_path: str | None, status: str, error: str | None = None) -> None:
