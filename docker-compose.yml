@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: jobagent-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: jobagent
+      POSTGRES_USER: jobagent
+      POSTGRES_PASSWORD: change_this_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
