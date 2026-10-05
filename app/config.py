@@ -3,13 +3,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
 MASTER_RESUME_PATH = os.getenv("MASTER_RESUME_PATH", "./private/master_resume.txt")
 PROFILE_PATH = os.getenv("PROFILE_PATH", "./private/profile.json")
 DEFAULT_LLM_PROVIDER = os.getenv("DEFAULT_LLM_PROVIDER", "provider_01")
-
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL is missing")
 
 
 def available_providers(max_slots: int = 52) -> list[str]:
