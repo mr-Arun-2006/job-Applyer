@@ -1,0 +1,10 @@
+[
+  {
+    "company": "Example Company",
+    "career_url": "https://careers.example.com/jobs",
+    "allowed_domains": [
+      "careers.example.com",
+      "example.com"
+    ]
+  }
+]
