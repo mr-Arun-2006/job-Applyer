@@ -17,6 +17,7 @@ from app.database import init_db, save_jobs
 from app.discovery_engine import discover_official_source, scrape_public_job_page
 from app.job_runner import JobRunner
 from app.official_sources import load_official_sources
+from app.runtime import ensure_supported_python
 
 
 def load_profile() -> str:
@@ -38,6 +39,7 @@ def discover_jobs(sources_path: str, ai: JobAIPipeline) -> list[dict]:
     all_jobs: list[dict] = []
     for source in sources:
         all_jobs.extend(discover_official_source(source, ai))
+
     save_jobs(all_jobs)
     return all_jobs
 
@@ -49,41 +51,56 @@ def prepare_jobs(jobs: list[dict], ai: JobAIPipeline) -> list[dict]:
     eligible = runner.eligible_jobs(jobs, profile)
 
     print(f"Eligible jobs: {len(eligible)}")
+
     for index, job in enumerate(eligible, start=1):
         prepared = runner.prepare_application(job, profile, resume)
         job["resume_path"] = prepared["resume_path"]
         job["cover_letter_path"] = prepared["cover_letter_path"]
         runner.record_result(job, prepared, "READY_FOR_HUMAN_REVIEW")
+
         print(
             f"[{index}/{len(eligible)}] {job.get('company')} | "
             f"{job.get('title')} | score={job.get('match_score')} | "
             f"resume={prepared['resume_path']}"
         )
+
     return eligible
 
 
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Personal official-company Job-Applyer"
+        description="Personal official-company Job-Applyer",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("init-db")
-    sub.add_parser("models")
+    sub.add_parser("init-db", help="Create or upgrade the local SQLite database.")
+    sub.add_parser("models", help="Show configured NVIDIA model IDs.")
 
-    scrape = sub.add_parser("scrape")
+    scrape = sub.add_parser("scrape", help="Scrape a single public job page.")
     scrape.add_argument("url")
 
-    discover = sub.add_parser("discover")
+    discover = sub.add_parser("discover", help="Discover jobs from official sources.")
     discover.add_argument("--sources", default=OFFICIAL_SOURCES_PATH)
 
-    prepare = sub.add_parser("prepare")
+    prepare = sub.add_parser(
+        "prepare",
+        help="Discover eligible jobs and generate tailored application documents.",
+    )
     prepare.add_argument("--sources", default=OFFICIAL_SOURCES_PATH)
 
-    apply = sub.add_parser("apply")
+    apply = sub.add_parser(
+        "apply",
+        help="Prepare jobs and open the human-confirmed browser application flow.",
+    )
     apply.add_argument("--sources", default=OFFICIAL_SOURCES_PATH)
 
+    return parser
+
+
+def main() -> None:
+    parser = build_parser()
     args = parser.parse_args()
+    ensure_supported_python()
 
     if args.command == "init-db":
         init_db()
@@ -119,10 +136,7 @@ def main() -> None:
 
     profile = load_profile()
     agent = ApplicationAgent(ai)
-    results = agent.run_all(
-        eligible,
-        profile,
-    )
+    results = agent.run_all(eligible, profile)
 
     runner = JobRunner(ai)
     for job, status in results:
@@ -131,7 +145,12 @@ def main() -> None:
             "cover_letter_path": job.get("cover_letter_path"),
         }
         mapped_status = "SUBMITTED" if status == "SUBMITTED" else status
-        runner.record_result(job, prepared, mapped_status, None if status == "SUBMITTED" else status)
+        runner.record_result(
+            job,
+            prepared,
+            mapped_status,
+            None if status == "SUBMITTED" else status,
+        )
         print(f"{job.get('company')} | {job.get('title')} | {status}")
 
     print("Application run completed.")

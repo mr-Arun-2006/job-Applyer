@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import hashlib
-import os
 import sqlite3
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
+
+from app.config import JOB_APPLIER_DB
 
 
-DB_PATH = Path(os.getenv("JOB_APPLIER_DB", "./data/job_applyer.db"))
+DB_PATH = Path(JOB_APPLIER_DB)
 
 
 def _connection() -> sqlite3.Connection:
@@ -63,12 +64,13 @@ def make_job_key(job: dict) -> str:
             str(job.get("application_url") or job.get("official_url") or ""),
         ]
     ).strip().lower()
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    return hashlib.sha256(raw.encode()).hexdigest()
 
 
 def save_jobs(jobs: Iterable[dict]) -> int:
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     inserted = 0
+
     with _connection() as conn:
         for job in jobs:
             key = make_job_key(job)
@@ -77,7 +79,7 @@ def save_jobs(jobs: Iterable[dict]) -> int:
                 INSERT OR IGNORE INTO jobs
                 (job_key, source, company, title, location, official_url,
                  application_url, description, discovered_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     key,
@@ -92,20 +94,31 @@ def save_jobs(jobs: Iterable[dict]) -> int:
                 ),
             )
             inserted += int(cur.rowcount > 0)
+
     return inserted
 
 
 def has_application(job: dict) -> bool:
     key = make_job_key(job)
+
     with _connection() as conn:
         row = conn.execute(
-            "SELECT status FROM applications WHERE job_key = ? LIMIT 1", (key,)
+            "SELECT status FROM applications WHERE job_key = ? LIMIT 1",
+            (key,),
         ).fetchone()
+
     return bool(row and row["status"] in {"SUBMITTED", "APPLIED"})
 
 
-def record_application(job: dict, resume_path: str | None, cover_letter_path: str | None, status: str, error: str | None = None) -> None:
+def record_application(
+    job: dict,
+    resume_path: str | None,
+    cover_letter_path: str | None,
+    status: str,
+    error: str | None = None,
+) -> None:
     key = make_job_key(job)
+
     with _connection() as conn:
         conn.execute(
             """
@@ -129,6 +142,6 @@ def record_application(job: dict, resume_path: str | None, cover_letter_path: st
                 cover_letter_path,
                 status,
                 error,
-                datetime.now(timezone.utc).isoformat(),
+                datetime.now(UTC).isoformat(),
             ),
         )

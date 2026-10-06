@@ -78,7 +78,11 @@ class LLMRouter:
         max_tokens: int = 4096,
     ) -> dict:
         raw = self.complete(
-            stage, system, user, temperature=temperature, max_tokens=max_tokens
+            stage,
+            system,
+            user,
+            temperature=temperature,
+            max_tokens=max_tokens,
         )
         cleaned = raw.strip()
         fence = chr(96) * 3
@@ -98,7 +102,7 @@ class LLMRouter:
             ) from exc
 
         if not isinstance(value, dict):
-            raise RuntimeError(
+            raise TypeError(
                 f"Model returned non-object JSON for stage '{stage}'."
             )
         return value

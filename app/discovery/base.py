@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Protocol
+
 
 @dataclass
 class DiscoveredJob:
@@ -14,6 +17,7 @@ class DiscoveredJob:
     official_url: str | None
     application_url: str | None
     posted_at: str | None = None
+
 
 class JobSource(Protocol):
     def discover(self) -> list[DiscoveredJob]: ...
