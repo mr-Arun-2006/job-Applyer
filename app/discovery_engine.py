@@ -21,29 +21,42 @@ def _fetch(url: str) -> tuple[str, str]:
         return str(response.url), response.text
 
 
-def _candidate_links(index_url: str, html: str, allowed_domains: tuple[str, ...]) -> list[str]:
+def _candidate_links(
+    index_url: str,
+    html: str,
+    allowed_domains: tuple[str, ...],
+) -> list[str]:
     soup = BeautifulSoup(html, "html.parser")
     links: list[str] = []
     keywords = (
-        "job", "jobs", "career", "careers", "position",
-        "opening", "requisition", "vacancy",
+        "job",
+        "jobs",
+        "career",
+        "careers",
+        "position",
+        "opening",
+        "requisition",
+        "vacancy",
     )
 
     for anchor in soup.find_all("a", href=True):
         url = urljoin(index_url, anchor["href"])
         label = anchor.get_text(" ", strip=True).lower()
-        if is_official_url(url, allowed_domains) and any(
-            key in url.lower() or key in label for key in keywords
+        if (
+            is_official_url(url, allowed_domains)
+            and any(key in url.lower() or key in label for key in keywords)
+            and url not in links
         ):
-            if url not in links:
-                links.append(url)
+            links.append(url)
         if len(links) >= MAX_DETAIL_PAGES_PER_SOURCE:
             break
+
     return links
 
 
 def discover_official_source(
-    source: OfficialSource, ai: JobAIPipeline | None = None
+    source: OfficialSource,
+    ai: JobAIPipeline | None = None,
 ) -> list[dict]:
     ai = ai or JobAIPipeline()
     index_url, index_html = _fetch(source.career_url)
@@ -68,7 +81,8 @@ def discover_official_source(
             job["official_url"] = job.get("official_url") or final_url
             application_url = job.get("application_url")
             if application_url and not is_official_url(
-                application_url, source.allowed_domains
+                application_url,
+                source.allowed_domains,
             ):
                 job["application_url"] = None
             job["source"] = source.company
