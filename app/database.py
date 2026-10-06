@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import sqlite3
+from collections.abc import Iterable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
 
 from app.config import JOB_APPLIER_DB
 
@@ -64,7 +64,7 @@ def make_job_key(job: dict) -> str:
             str(job.get("application_url") or job.get("official_url") or ""),
         ]
     ).strip().lower()
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    return hashlib.sha256(raw.encode()).hexdigest()
 
 
 def save_jobs(jobs: Iterable[dict]) -> int:
@@ -79,7 +79,7 @@ def save_jobs(jobs: Iterable[dict]) -> int:
                 INSERT OR IGNORE INTO jobs
                 (job_key, source, company, title, location, official_url,
                  application_url, description, discovered_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     key,
