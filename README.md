@@ -1,6 +1,12 @@
-# Job-Applyer
+# Job-Applyer 2.0
 
 Personal-use job discovery and application preparation system focused on official company career sources.
+
+## Python runtime
+
+This version targets **CPython 3.14.x** and is verified against **Python 3.14.8 on Windows x86-64**.
+
+Python 3.14.8 was released on September 30, 2026. The repository pins the local development version through `.python-version`.
 
 ## Workflow
 
@@ -14,12 +20,13 @@ Personal-use job discovery and application preparation system focused on officia
 8. Record the exact resume and cover-letter files used for each application.
 9. Keep final submission human-confirmed and never bypass CAPTCHA, MFA, OTP or anti-bot controls.
 
-There is intentionally no 10-job application cap. Set APPLY_TO_ALL_ELIGIBLE=true to process every eligible job.
+There is intentionally no 10-job application cap. Set `APPLY_TO_ALL_ELIGIBLE=true` to process every eligible job.
 
 ## NVIDIA API
 
-The application uses one NVIDIA_API_KEY with NVIDIA's OpenAI-compatible chat endpoint:
-https://integrate.api.nvidia.com/v1/chat/completions
+The application uses one `NVIDIA_API_KEY` with NVIDIA's OpenAI-compatible chat endpoint:
+
+    https://integrate.api.nvidia.com/v1/chat/completions
 
 Default stage mapping:
 
@@ -31,28 +38,75 @@ Default stage mapping:
     form          -> openai/gpt-oss-20b
     fallback      -> deepseek-ai/deepseek-v4-flash
 
-All model IDs are configurable in .env.
+All model IDs are configurable in `.env`.
 
 ## Official-source policy
 
 A job is accepted only when its source URL and application URL pass the configured company-domain allowlist. The system is not designed to scrape LinkedIn, Indeed, Naukri, Glassdoor or other job aggregators.
 
-For a company that uses a third-party ATS, add that ATS host to the company's allowed_domains only when it is the company's official hiring endpoint.
+For a company that uses a third-party ATS, add that ATS host to the company's `allowed_domains` only when it is the company's official hiring endpoint.
 
 Copy the source template:
 
-    cp config/company_sources.example.json config/company_sources.json
+    copy config\\company_sources.example.json config\\company_sources.json
 
 Then add your target companies and their official career URLs.
 
-## Local setup
+## Windows setup with Python 3.14.8
 
-Create and activate a virtual environment, then install:
+Check the interpreter:
 
-    pip install -r requirements.txt
-    playwright install
+    py -3.14 --version
 
-Copy .env.example to .env and set NVIDIA_API_KEY.
+Expected:
+
+    Python 3.14.8
+
+Clone and enter the project:
+
+    git clone https://github.com/mr-Arun-2006/job-Applyer.git
+    cd job-Applyer
+
+Create the virtual environment with the 3.14 launcher:
+
+    py -3.14 -m venv .venv
+
+Activate it in PowerShell:
+
+    .venv\\Scripts\\Activate.ps1
+
+If PowerShell blocks the activation script, use a process-scoped policy change:
+
+    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+    .venv\\Scripts\\Activate.ps1
+
+Upgrade packaging tools:
+
+    python -m pip install --upgrade pip setuptools wheel
+
+Install the project and development tools:
+
+    python -m pip install -e ".[dev]"
+
+Install the Chromium browser used by the application agent:
+
+    python -m playwright install chromium
+
+Confirm the runtime:
+
+    python --version
+
+Confirm the CLI:
+
+    python main.py --help
+
+Run the test suite:
+
+    pytest -q
+
+## Local configuration
+
+Copy `.env.example` to `.env` and set `NVIDIA_API_KEY`.
 
 Create your local private files:
 
@@ -79,7 +133,7 @@ Run the browser application flow for every eligible job:
 
     python main.py apply
 
-For each application, the browser fills ordinary fields when they can be mapped safely, then pauses and requires you to type SUBMIT or SKIP. CAPTCHA, MFA, OTP, legal declarations and other human-only controls are never bypassed.
+For each application, the browser fills ordinary fields when they can be mapped safely, then pauses and requires you to type `SUBMIT` or `SKIP`. CAPTCHA, MFA, OTP, legal declarations and other human-only controls are never bypassed.
 
 ## Truthfulness and safety
 
@@ -89,11 +143,10 @@ For each application, the browser fills ordinary fields when they can be mapped 
 - Stop for human-only questions or legal declarations.
 - Respect site terms, rate limits and applicable laws.
 
-
 ## ATS resume generation
 
 Each eligible job gets a separate ATS-oriented DOCX resume. The generator uses a single-column layout, standard section headings, Arial typography, simple bullets, and no tables, graphics, icons, sidebars, text boxes or multi-column formatting.
 
-The resume model first tailors the content to the specific job description, responsibilities, required skills and preferred skills. A second NVIDIA model validates the draft against the master resume and reports unsupported claims and ATS issues. When validation fails, the draft is corrected once before the DOCX is written.
+The resume model tailors the content to the specific job description, responsibilities, required skills and preferred skills. A second NVIDIA model validates the draft against the master resume and reports unsupported claims and ATS issues. When validation fails, the draft is corrected once before the DOCX is written.
 
 The master resume remains the factual source of truth. The system may reorder and rewrite supported facts for relevance but does not add unsupported qualifications, experience, education, certifications, dates, employers, achievements or metrics.
