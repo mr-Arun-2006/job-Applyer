@@ -8,6 +8,8 @@ This version targets **CPython 3.14.x** and is verified against **Python 3.14.8 
 
 Python 3.14.8 was released on September 30, 2026. The repository pins the local development version through `.python-version`.
 
+The DOCX generator uses `python-docx-oss` 0.3.3. It keeps the standard `from docx import Document` import namespace and explicitly supports Python 3.14.
+
 ## Workflow
 
 1. Read a configured list of official company career pages.
