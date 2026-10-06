@@ -1,5 +1,6 @@
-playwright
-python-dotenv
-httpx
-beautifulsoup4
-python-docx>=1.1,<2
+# Runtime dependencies verified for CPython 3.14.x on Windows x86-64.
+playwright==1.63.0
+python-dotenv==1.2.4
+httpx==0.28.1
+beautifulsoup4==4.15.0
+python-docx==1.2.0
