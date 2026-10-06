@@ -1,4 +1,8 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
+from typing import ClassVar
+
 from playwright.sync_api import Page
 
 
@@ -12,10 +16,12 @@ class FormAction:
 class FormAgent:
     """Fill ordinary fields; human handles CAPTCHA/MFA/anti-bot controls."""
 
-    BLOCKED_NAMES = {"captcha", "recaptcha", "hcaptcha", "mfa", "otp", "verification"}
+    BLOCKED_NAMES: ClassVar[frozenset[str]] = frozenset(
+        {"captcha", "recaptcha", "hcaptcha", "mfa", "otp", "verification"}
+    )
 
     def fill_text_fields(self, page: Page, answers: dict[str, str]) -> list[FormAction]:
-        actions = []
+        actions: list[FormAction] = []
         for field, value in answers.items():
             if field.lower() in self.BLOCKED_NAMES:
                 actions.append(FormAction(field, "", "NEEDS_HUMAN_INPUT"))
