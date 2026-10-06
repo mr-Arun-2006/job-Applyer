@@ -22,13 +22,13 @@ def load_official_sources(
 
     raw = json.loads(file.read_text(encoding="utf-8"))
     if not isinstance(raw, list):
-        raise ValueError(f"Official sources file must contain a JSON array: {file}")
+        raise TypeError(f"Official sources file must contain a JSON array: {file}")
 
     sources: list[OfficialSource] = []
 
     for index, item in enumerate(raw, start=1):
         if not isinstance(item, dict):
-            raise ValueError(f"Official source #{index} must be a JSON object.")
+            raise TypeError(f"Official source #{index} must be a JSON object.")
 
         company = str(item.get("company", "")).strip()
         career_url = str(item.get("career_url", "")).strip()
@@ -46,7 +46,7 @@ def load_official_sources(
 
         configured_domains = item.get("allowed_domains", [])
         if not isinstance(configured_domains, list):
-            raise ValueError(
+            raise TypeError(
                 f"Official source #{index} 'allowed_domains' must be an array."
             )
 
