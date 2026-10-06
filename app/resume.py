@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from app.matching import match_job_to_profile
+
 
 def customize_resume(job, profile, base_resume_text: str) -> str:
     """Create a role-focused resume draft without inventing qualifications."""
