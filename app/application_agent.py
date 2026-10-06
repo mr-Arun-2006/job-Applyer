@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from playwright.sync_api import BrowserContext, Page, sync_playwright
 
@@ -86,7 +85,9 @@ class ApplicationAgent:
 
             print(f"Ready for human review: {job.get('company')} | {job.get('title')}")
             print(f"Application URL: {application_url}")
-            confirmation = input("Type SUBMIT to submit this application, or SKIP to continue: ").strip().upper()
+            confirmation = input(
+                "Type SUBMIT to submit this application, or SKIP to continue: "
+            ).strip().upper()
             if confirmation != "SUBMIT":
                 return "SKIPPED_BY_HUMAN"
 
