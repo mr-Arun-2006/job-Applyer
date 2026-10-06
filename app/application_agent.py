@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import json
+import logging
 
-from playwright.sync_api import BrowserContext, Page, sync_playwright
+from playwright.sync_api import BrowserContext, Error as PlaywrightError, Page, sync_playwright
 
 from app.ai_pipeline import JobAIPipeline
 from app.form_agent import FormAgent
 from app.resume_engine import ATSResumeEngine
+
+
+logger = logging.getLogger(__name__)
 
 
 class ApplicationAgent:
@@ -39,7 +43,8 @@ class ApplicationAgent:
                         "label": label,
                     }
                 )
-            except Exception:
+            except PlaywrightError as exc:
+                logger.debug("Unable to inspect a form field.", exc_info=exc)
                 continue
         return fields
 
@@ -80,8 +85,8 @@ class ApplicationAgent:
                 if locator.count():
                     try:
                         locator.fill(answer)
-                    except Exception:
-                        pass
+                    except PlaywrightError as exc:
+                        logger.debug("Unable to fill application field '%s'.", name, exc_info=exc)
 
             print(f"Ready for human review: {job.get('company')} | {job.get('title')}")
             print(f"Application URL: {application_url}")
@@ -93,10 +98,19 @@ class ApplicationAgent:
 
             page.get_by_role("button", name="submit").first.click()
             return "SUBMITTED"
-        except Exception as exc:
+        except (OSError, PlaywrightError, ValueError) as exc:
+            logger.warning(
+                "Application flow failed for %s | %s.",
+                job.get("company"),
+                job.get("title"),
+                exc_info=exc,
+            )
             return f"ERROR: {exc}"
         finally:
-            page.close()
+            try:
+                page.close()
+            except PlaywrightError as exc:
+                logger.debug("Unable to close application page.", exc_info=exc)
 
     def run_all(
         self,
